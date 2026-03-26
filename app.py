@@ -3,13 +3,20 @@ import numpy as np
 import joblib
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
-# Load models
+# Try to import TensorFlow/Keras safely
+try:
+    from tensorflow.keras.models import load_model
+    nn = load_model("nn_model.keras")   # adjust filename if you saved as .h5
+    nn_available = True
+except ImportError:
+    nn_available = False
+
+# Load classical models
 rf = joblib.load("rf_model.pkl")
 dt = joblib.load("dt_model.pkl")
 svm = joblib.load("svm_model.pkl")
 logreg = joblib.load("logreg_model.pkl")
 scaler = joblib.load("scaler.pkl")
-nn = load_model("nn_model.keras")
 
 # Load test set for metrics
 X_test = joblib.load("X_test.pkl")
@@ -33,7 +40,12 @@ turbidity = st.number_input("Turbidity", min_value=0.0, value=4.0)
 features = np.array([[ph, hardness, solids, chloramines, sulfate, conductivity, organic_carbon, trihalomethanes, turbidity]])
 features_scaled = scaler.transform(features)
 
-model_choice = st.selectbox("Choose a model:", ["Random Forest", "Decision Tree", "SVM", "Logistic Regression", "Neural Network"])
+# Build model list dynamically
+models = ["Random Forest", "Decision Tree", "SVM", "Logistic Regression"]
+if nn_available:
+    models.append("Neural Network")
+
+model_choice = st.selectbox("Choose a model:", models)
 
 if st.button("Predict"):
     if model_choice == "Random Forest":
@@ -52,16 +64,15 @@ if st.button("Predict"):
         model = logreg
         y_pred = model.predict(X_test)
         prediction = model.predict(features_scaled)[0]
-    elif model_choice == "Neural Network":
-        model = nn
-        y_pred = (model.predict(X_test) > 0.5).astype("int32")
-        prediction = (model.predict(features_scaled) > 0.5).astype("int32")[0][0]
+    elif model_choice == "Neural Network" and nn_available:
+        y_pred = (nn.predict(X_test) > 0.5).astype("int32")
+        prediction = (nn.predict(features_scaled) > 0.5).astype("int32")[0][0]
 
-    st.write("Prediction:", "✅ Potable" if prediction==1 else "❌ Not Potable")
+    st.write("Prediction:", "✅ Potable" if prediction == 1 else "❌ Not Potable")
 
     st.subheader("📊 Model Metrics")
-    st.write("Accuracy:", round(accuracy_score(y_test, y_pred)*100,2), "%")
-    st.write("Precision:", round(precision_score(y_test, y_pred)*100,2), "%")
-    st.write("Recall:", round(recall_score(y_test, y_pred)*100,2), "%")
-    st.write("F1 Score:", round(f1_score(y_test, y_pred)*100,2), "%")
-    st.write("ROC-AUC:", round(roc_auc_score(y_test, y_pred)*100,2), "%")
+    st.write("Accuracy:", round(accuracy_score(y_test, y_pred) * 100, 2), "%")
+    st.write("Precision:", round(precision_score(y_test, y_pred) * 100, 2), "%")
+    st.write("Recall:", round(recall_score(y_test, y_pred) * 100, 2), "%")
+    st.write("F1 Score:", round(f1_score(y_test, y_pred) * 100, 2), "%")
+    st.write("ROC-AUC:", round(roc_auc_score(y_test, y_pred) * 100, 2), "%")
