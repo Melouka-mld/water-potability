@@ -1,15 +1,20 @@
 import streamlit as st
 import numpy as np
 import joblib
+from tensorflow.keras.models import load_model
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
-# Load trained models and scaler (make sure you saved them in your notebook)
+# Load models
 rf = joblib.load("rf_model.pkl")
 dt = joblib.load("dt_model.pkl")
 svm = joblib.load("svm_model.pkl")
 logreg = joblib.load("logreg_model.pkl")
-nn = joblib.load("nn_model.pkl")   # if you saved NN with joblib or keras model.save()
 scaler = joblib.load("scaler.pkl")
+nn = load_model("nn_model.keras")
+
+# Load test set for metrics
+X_test = joblib.load("X_test.pkl")
+y_test = joblib.load("y_test.pkl")
 
 st.title("💧 Water Potability Prediction")
 
@@ -26,50 +31,38 @@ organic_carbon = st.number_input("Organic Carbon", min_value=0.0, value=10.0)
 trihalomethanes = st.number_input("Trihalomethanes", min_value=0.0, value=60.0)
 turbidity = st.number_input("Turbidity", min_value=0.0, value=4.0)
 
-# Collect inputs
 features = np.array([[ph, hardness, solids, chloramines, sulfate, conductivity, organic_carbon, trihalomethanes, turbidity]])
 features_scaled = scaler.transform(features)
 
-# Dropdown to select model
 model_choice = st.selectbox("Choose a model:", ["Random Forest", "Decision Tree", "SVM", "Logistic Regression", "Neural Network"])
 
-# Predict
 if st.button("Predict"):
     if model_choice == "Random Forest":
         model = rf
+        y_pred = model.predict(X_test)
+        prediction = model.predict(features_scaled)[0]
     elif model_choice == "Decision Tree":
         model = dt
+        y_pred = model.predict(X_test)
+        prediction = model.predict(features_scaled)[0]
     elif model_choice == "SVM":
         model = svm
+        y_pred = model.predict(X_test)
+        prediction = model.predict(features_scaled)[0]
     elif model_choice == "Logistic Regression":
         model = logreg
+        y_pred = model.predict(X_test)
+        prediction = model.predict(features_scaled)[0]
     elif model_choice == "Neural Network":
         model = nn
-
-    # For NN, prediction format may differ
-    if model_choice == "Neural Network":
+        y_pred = (model.predict(X_test) > 0.5).astype("int32")
         prediction = (model.predict(features_scaled) > 0.5).astype("int32")[0][0]
-    else:
-        prediction = model.predict(features_scaled)[0]
 
     st.write("Prediction:", "✅ Potable" if prediction==1 else "❌ Not Potable")
 
-    # Show metrics (using a small test set saved earlier)
-    try:
-        X_test = joblib.load("X_test.pkl")
-        y_test = joblib.load("y_test.pkl")
-
-        if model_choice == "Neural Network":
-            y_pred = (model.predict(X_test) > 0.5).astype("int32")
-        else:
-            y_pred = model.predict(X_test)
-
-        st.subheader("📊 Model Metrics")
-        st.write("Accuracy:", round(accuracy_score(y_test, y_pred)*100,2), "%")
-        st.write("Precision:", round(precision_score(y_test, y_pred)*100,2), "%")
-        st.write("Recall:", round(recall_score(y_test, y_pred)*100,2), "%")
-        st.write("F1 Score:", round(f1_score(y_test, y_pred)*100,2), "%")
-        st.write("ROC-AUC:", round(roc_auc_score(y_test, y_pred)*100,2), "%")
-
-    except:
-        st.warning("Metrics unavailable — please save X_test and y_test with joblib in your notebook.")
+    st.subheader("📊 Model Metrics")
+    st.write("Accuracy:", round(accuracy_score(y_test, y_pred)*100,2), "%")
+    st.write("Precision:", round(precision_score(y_test, y_pred)*100,2), "%")
+    st.write("Recall:", round(recall_score(y_test, y_pred)*100,2), "%")
+    st.write("F1 Score:", round(f1_score(y_test, y_pred)*100,2), "%")
+    st.write("ROC-AUC:", round(roc_auc_score(y_test, y_pred)*100,2), "%")
