@@ -4,10 +4,11 @@ import joblib
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
+
 # Try to import TensorFlow safely
 try:
     from tensorflow.keras.models import load_model
-    nn = load_model("nn_model.keras")
+    nn = load_model("nn_model.keras")   # or "nn_model.h5"
     nn_available = True
 except ImportError:
     nn_available = False
@@ -47,6 +48,7 @@ turbidity = st.sidebar.number_input("Turbidity", min_value=0.0, value=4.0)
 features = np.array([[ph, hardness, solids, chloramines, sulfate, conductivity, organic_carbon, trihalomethanes, turbidity]])
 features_scaled = scaler.transform(features)
 
+# Model selection
 models = ["Random Forest", "Decision Tree", "SVM", "Logistic Regression"]
 if nn_available:
     models.append("Neural Network")
@@ -74,9 +76,10 @@ if st.sidebar.button("Run Prediction"):
         y_pred = model.predict(X_test)
         prediction = model.predict(features_scaled)[0]
     elif model_choice == "Neural Network" and nn_available:
-    y_pred = (nn.predict(X_test) > 0.5).astype("int32")
-prediction = (nn.predict(features_scaled) > 0.5).astype("int32")[0][0]
+        y_pred = (nn.predict(X_test) > 0.5).astype("int32")
+        prediction = (nn.predict(features_scaled) > 0.5).astype("int32")[0][0]
 
+    # Show prediction
     st.success("✅ Potable" if prediction == 1 else "❌ Not Potable")
 
     # ---------------- Metrics Section ----------------
@@ -89,6 +92,8 @@ prediction = (nn.predict(features_scaled) > 0.5).astype("int32")[0][0]
     col4, col5 = st.columns(2)
     col4.metric("F1 Score", f"{f1_score(y_test, y_pred)*100:.2f}%")
     col5.metric("ROC-AUC", f"{roc_auc_score(y_test, y_pred)*100:.2f}%")
-fig, ax = plt.subplots()
-ConfusionMatrixDisplay.from_predictions(y_test, y_pred, ax=ax)
-st.pyplot(fig)
+
+    # Confusion Matrix
+    fig, ax = plt.subplots()
+    ConfusionMatrixDisplay.from_predictions(y_test, y_pred, ax=ax)
+    st.pyplot(fig)
