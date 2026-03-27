@@ -34,7 +34,7 @@ Choose a model, enter water quality parameters, and view predictions along with 
 """)
 
 # Sidebar for inputs
-st.sidebar.header("🔧 Input Parameters")
+st.sidebar.header(" Input Parameters")
 ph = st.sidebar.number_input("pH", min_value=0.0, max_value=14.0, value=7.0)
 hardness = st.sidebar.number_input("Hardness", min_value=0.0, value=200.0)
 solids = st.sidebar.number_input("Solids", min_value=0.0, value=10000.0)
@@ -53,10 +53,10 @@ models = ["Random Forest", "Decision Tree", "SVM", "Logistic Regression"]
 if nn_available:
     models.append("Neural Network")
 
-model_choice = st.sidebar.selectbox("📌 Choose a model", models)
+model_choice = st.sidebar.selectbox(" Choose a model", models)
 
 # ---------------- Prediction Section ----------------
-st.subheader("🔮 Prediction Result")
+st.subheader(" Prediction Result")
 
 if st.sidebar.button("Run Prediction"):
     if model_choice == "Random Forest":
@@ -80,10 +80,10 @@ if st.sidebar.button("Run Prediction"):
         prediction = (nn.predict(features_scaled) > 0.5).astype("int32")[0][0]
 
     # Show prediction
-    st.success("✅ Potable" if prediction == 1 else "❌ Not Potable")
+    st.success(" Potable" if prediction == 1 else " Not Potable")
 
     # ---------------- Metrics Section ----------------
-    st.subheader("📊 Model Performance Metrics")
+    st.subheader(" Model Performance Metrics")
     col1, col2, col3 = st.columns(3)
     col1.metric("Accuracy", f"{accuracy_score(y_test, y_pred)*100:.2f}%")
     col2.metric("Precision", f"{precision_score(y_test, y_pred)*100:.2f}%")
